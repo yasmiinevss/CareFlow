@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import request from 'supertest';
 import app from '../src/app.js';
-import pool from '../db/pool.js';
+import pool from '../src/db/pool.js';
 
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const tomorrow = new Date(Date.now() + ONE_DAY).toISOString();
