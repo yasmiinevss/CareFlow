@@ -21,3 +21,12 @@ coverage/
 .DS_Store
 .vscode/
 .idea/
+
+# Dockerfile
+node_modules
+.env
+.env.*
+!.env.example
+tests
+*.log
+.git
