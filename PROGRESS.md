@@ -119,3 +119,18 @@ SQL injection, class inheritance (`extends Error`).
 ### Next session
 Docker Compose: backend + PostgreSQL on a shared network, automatic database
 initialization, healthchecks.
+
+## Session 2026-10-18
+
+### Done
+- `compose.yaml`: backend + PostgreSQL on a private network, persistent volume
+- Healthchecks (`pg_isready`, `/api/health`), startup order with `service_healthy`
+- Automatic database initialization (`/docker-entrypoint-initdb.d`)
+
+### Issues encountered
+- `Resource deadlock avoided`: project in iCloud-synced `Documents`, files were `dataless`.
+  Moved the project to `~/Projects`.
+
+### Next session
+CI with GitHub Actions: run tests against a temporary PostgreSQL, build the Docker image.
+
