@@ -95,3 +95,27 @@ SQL injection, class inheritance (`extends Error`).
    document `GET /patients/:id` in `docs/api.md`
 2. Automated tests (validators, then API endpoints)
 3. Start the React frontend
+
+## Session 2026-10-15
+
+### Done
+- Cleanup: `utils` folder, error codes as strings, `X-Powered-By` disabled
+- Unit tests (`node:test`): validators and status transition rules
+- Integration tests (`supertest`): PATCH endpoint against a real database
+- Status rules extracted into a pure function (`appointmentRules.js`)
+- Backend Dockerfile and `.dockerignore`; backend runs in a container
+
+### Technical decisions
+- Built-in test runner (`node:test`), `supertest` as a dev dependency
+- Database reset before each integration test (test isolation)
+- Docker image: `node:24-alpine`, `npm ci --omit=dev`, non-root user, no secrets in the image
+- All application code in `src/`; `db/` only contains SQL scripts
+
+### Issues encountered
+- `pg` installed in the wrong folder: worked locally, failed in Docker
+- Duplicate `config.js` outside `src/`: also revealed by Docker
+- Default import vs `import * as` for repositories
+
+### Next session
+Docker Compose: backend + PostgreSQL on a shared network, automatic database
+initialization, healthchecks.
