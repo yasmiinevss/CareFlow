@@ -173,3 +173,17 @@ docs/                API reference and data model
 3. AWS deployment: IAM, VPC, Security Groups, EC2, CloudWatch
 4. Minimal React frontend served by Nginx
 5. Continuous deployment
+
+### CI (2026-10-18)
+
+#### Done
+- `.github/workflows/ci.yaml`: `test` job (PostgreSQL 17 service container, npm ci, npm test)
+  then `build` job (docker build), only if tests pass (`needs: test`)
+- Verified: a deliberately broken rule makes the pipeline fail and skips the build
+
+#### Issues encountered
+- Push refused: Personal Access Token without `workflow` scope.
+  Replaced with a fine-grained token limited to this repository.
+
+#### Next session
+AWS foundations: IAM user with MFA, budget alert, VPC and Security Groups, costs.

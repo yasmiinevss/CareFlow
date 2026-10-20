@@ -21,7 +21,7 @@ services:
     build: ./backend
     environment:
       PORT: 3000
-      DB_HOST: db
+      DB_HOST: careflow-db
       DB_PORT: 5432
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
