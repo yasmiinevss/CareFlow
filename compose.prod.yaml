@@ -2,8 +2,20 @@ services:
   careflow-db:
     ports: !reset []
     restart: unless-stopped
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: eu-west-3
+        awslogs-group: /careflow
+        awslogs-stream: careflow-db
 
   backend:
     ports: !override
       - "80:3000"
     restart: unless-stopped
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: eu-west-3
+        awslogs-group: /careflow
+        awslogs-stream: backend
