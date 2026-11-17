@@ -45,9 +45,34 @@ jobs:
       - run: npm ci
       - run: npm test
 
+
   build:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v5
-      - run: docker build -t careflow-backend ./backend
+
+      - name: Build image
+        run: docker build -t careflow-backend:${{ github.sha }} ./backend
+
+      - name: Configure AWS credentials (OIDC)
+        if: github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::236554611831:role/careflow-github-deploy
+          aws-region: eu-west-3
+
+      - name: Log in to Amazon ECR
+        if: github.event_name == 'push'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Push image to ECR
+        if: github.event_name == 'push'
+        run: |
+          IMAGE=${{ steps.ecr.outputs.registry }}/careflow-backend:${{ github.sha }}
+          docker tag careflow-backend:${{ github.sha }} $IMAGE
+          docker push $IMAGE
