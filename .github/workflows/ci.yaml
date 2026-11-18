@@ -76,3 +76,13 @@ jobs:
           IMAGE=${{ steps.ecr.outputs.registry }}/careflow-backend:${{ github.sha }}
           docker tag careflow-backend:${{ github.sha }} $IMAGE
           docker push $IMAGE
+      - name: Debug OIDC token claims
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('sts.amazonaws.com');
+            const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+            core.info(`iss = ${payload.iss}`);
+            core.info(`sub = ${payload.sub}`);
+            core.info(`aud = ${payload.aud}`);
