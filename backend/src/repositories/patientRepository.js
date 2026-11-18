@@ -28,3 +28,17 @@ export async function createPatient(firstName, lastName) {
   );
   return result.rows[0];
 }
+
+export async function getStatsByPatientId(patientId) {
+  const result = await pool.query(
+    `SELECT
+      COUNT(*) FILTER (WHERE status = 'completed')::int AS "completed",
+      COUNT(*) FILTER (WHERE status = 'no_show')::int AS "noShow",
+      COUNT(*) FILTER (WHERE status = 'cancelled')::int AS "cancelled",
+      COUNT(*) FILTER (WHERE status = 'upcoming')::int AS "upcoming"
+     FROM appointments
+     WHERE patient_id = $1`,
+    [patientId]
+  );
+  return result.rows[0];
+}

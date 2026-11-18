@@ -12,3 +12,17 @@ export async function updateAppointment(id, changes) {
 
   return appointmentRepository.update(id, changes);
 }
+
+export async function createAppointment(data) {
+  return appointmentRepository.create(data);
+}
+
+export async function getAppointmentStats(id) {
+  const appointment = await appointmentRepository.findById(id);
+  if (!appointment) {
+    throw new AppError(404, 'NOT_FOUND', `Appointment ${id} not found`);
+  }
+
+  const stats = await appointmentRepository.getStatsByPatientId(appointment.patient_id);
+  return stats;
+}

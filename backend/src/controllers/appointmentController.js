@@ -1,7 +1,7 @@
 import * as appointmentRepository from '../repositories/appointmentRepository.js';
 import {AppError} from '../utils/AppError.js';
 import { validateNewAppointment, validateAppointmentUpdate } from '../validators/appointmentsValidator.js';
-import * as appointmentService from '../services/appointmentService.js';
+import * as  appointmentService from '../services/appointmentService.js';
 
 export async function listAppointments(req, res) {
   const appointments = await appointmentRepository.findAll();
