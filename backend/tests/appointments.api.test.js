@@ -4,16 +4,10 @@ import { readFile } from 'node:fs/promises';
 import request from 'supertest';
 import app from '../src/app.js';
 import pool from '../src/db/pool.js';
-
+import resetDatabase from './utils/resetDb.js';
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const tomorrow = new Date(Date.now() + ONE_DAY).toISOString();
 
-async function resetDatabase() {
-  const schema = await readFile(new URL('../db/schema.sql', import.meta.url), 'utf8');
-  const seed = await readFile(new URL('../db/seed.sql', import.meta.url), 'utf8');
-  await pool.query(schema);
-  await pool.query(seed);
-}
 
 // Seed data reminder:
 // 1 = scheduled, 2 = completed, 3 = scheduled, 4 = no_show, 5 = cancelled

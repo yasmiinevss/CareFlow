@@ -1,16 +1,15 @@
 import * as patientRepository from '../repositories/patientRepository.js';
 import {AppError} from '../utils/AppError.js';
 import {validatePatient} from '../validators/patientValidator.js';
+import { parseId } from '../validators/patientValidator.js';
+
 export async function listPatients(req, res) {
   const patients = await patientRepository.findAll();
   res.json(patients);
 }
 
 export async function getPatientById(req, res) {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'Patient id must be a positive integer');
-  }
+  const id = parseId(req.params.id, 'Patient');
   const patient = await patientRepository.findById(id);
   if (!patient) {
     throw new AppError(404, 'NOT_FOUND', `Patient with ID ${id} not found`);
@@ -25,10 +24,7 @@ export async function createPatient(req, res) {
 }
 
 export async function getPatientStats(req, res) {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'Patient id must be a positive integer');
-  }
+  const id = parseId(req.params.id, 'Patient');
   const patient = await patientRepository.findById(id);
   if (!patient) {
     throw new AppError(404, 'NOT_FOUND', `Patient with ID ${id} not found`);

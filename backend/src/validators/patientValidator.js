@@ -2,6 +2,14 @@ import {AppError} from '../utils/AppError.js';
 
 const MAX_NAME_LENGTH = 100;
 
+export function parseId(value, resourceName) {
+  const id = Number(value);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new AppError(400, 'VALIDATION_ERROR', `${resourceName} id must be a positive integer`);
+  }
+  return id;
+};
+
 export function checkName(value, fieldName) {
   if (typeof value !== 'string') {
     throw new AppError(400, 'VALIDATION_ERROR', `${fieldName} must be a string`);

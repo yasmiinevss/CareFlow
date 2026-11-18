@@ -1,4 +1,6 @@
 import pool from '../db/pool.js';
+import { notFound } from '../middlewares/notFound.js';
+import { AppError } from '../utils/AppError.js';
 
 export async function findAll() {
   const result = await pool.query(
@@ -30,15 +32,23 @@ export async function createPatient(firstName, lastName) {
 }
 
 export async function getStatsByPatientId(patientId) {
+  const patient = await findById(patientId);
+  if(patient === undefined) {
+    throw new AppError(404, 'NOT_FOUND', `Patient ${patientId} not found`);
+  };
+  if (patientId <= 0 || !Number.isInteger(patientId)) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Patient id must be a positive integer');
+  };
   const result = await pool.query(
-    `SELECT
+    `SELECT 
       COUNT(*) FILTER (WHERE status = 'completed')::int AS "completed",
       COUNT(*) FILTER (WHERE status = 'no_show')::int AS "noShow",
       COUNT(*) FILTER (WHERE status = 'cancelled')::int AS "cancelled",
-      COUNT(*) FILTER (WHERE status = 'upcoming')::int AS "upcoming"
+      COUNT(*) FILTER (WHERE status = 'scheduled')::int AS "upcoming"
      FROM appointments
      WHERE patient_id = $1`,
     [patientId]
   );
   return result.rows[0];
 }
+
