@@ -12,6 +12,7 @@ All requests and responses use JSON. Dates use the ISO 8601 format (UTC), e.g. `
 | POST | `/appointments` | Create an appointment | 201 |
 | PATCH | `/appointments/:id` | Update an appointment (date, duration, status) | 200 |
 | GET | `/patients` | List all patients | 200 |
+| GET | `/patients/:id/stats` | Get appointment counters for a patient | 200 |
 | POST | `/patients` | Create a patient | 201 |
 
 ## Error format
@@ -175,3 +176,28 @@ Creates a patient. `id` and `created_at` are set by the server.
 
 **Errors**
 - `400 VALIDATION_ERROR` — `last_name` or `first_name` is missing, empty, contains digits, or exceeds 100 characters
+
+### GET /patients/:id/stats
+
+Returns appointment counters for one patient, grouped by status.
+Raw counts are returned.
+
+| Counter | Counts the appointments with status |
+|---|---|
+| `completed` | `completed`  |
+| `noShow` | `no_show`|
+| `cancelled` | `cancelled` |
+| `upcoming` | `scheduled` |
+
+**Request body:** none
+
+**Response 200**
+```json
+{ "completed": 3, "noShow": 1, "cancelled": 2, "upcoming": 1 }
+```
+
+A patient with no appointments returns `0` for every counter.
+
+**Errors**
+- `400 VALIDATION_ERROR` — `id` is not a positive integer
+- `404 NOT_FOUND` — no patient with this id
