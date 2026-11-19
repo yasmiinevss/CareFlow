@@ -1,5 +1,5 @@
-services:
-  careflow-db:
+  backend:
+    image: 236554611831.dkr.ecr.eu-west-3.amazonaws.com/careflow-backend:${IMAGE_TAG:?IMAGE_TAG is required}
     ports: !reset []
     restart: unless-stopped
     logging:
@@ -7,15 +7,16 @@ services:
       options:
         awslogs-region: eu-west-3
         awslogs-group: /careflow
-        awslogs-stream: careflow-db
+        awslogs-stream: backend
 
-  backend:
+  frontend:
+    image: 236554611831.dkr.ecr.eu-west-3.amazonaws.com/careflow-frontend:${IMAGE_TAG:?IMAGE_TAG is required}
     ports: !override
-      - "80:3000"
+      - "80:80"
     restart: unless-stopped
     logging:
       driver: awslogs
       options:
         awslogs-region: eu-west-3
         awslogs-group: /careflow
-        awslogs-stream: backend
+        awslogs-stream: frontend
