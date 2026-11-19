@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Build image
+      - name: Build images
         run: |
          docker build -t careflow-backend:${{ github.sha }} ./backend
          docker build -t careflow-frontend:${{ github.sha }} ./frontend
