@@ -75,12 +75,12 @@ jobs:
       - name: Push image to ECR
         if: github.event_name == 'push'
         run: |
-          IMAGE-BACKEND=${{ steps.ecr.outputs.registry }}/careflow-backend:${{ github.sha }}
-          docker tag careflow-backend:${{ github.sha }} $IMAGE-BACKEND
-          docker push $IMAGE-BACKEND
-          
-          IMAGE-FRONTEND=${{ steps.ecr.outputs.registry }}/careflow-frontend:${{ github.sha }}
-          docker tag careflow-frontend:${{ github.sha }} $IMAGE-FRONTEND
-          docker push $IMAGE-FRONTEND
+          IMAGE_BACKEND=${{ steps.ecr.outputs.registry }}/careflow-backend:${{ github.sha }}
+          docker tag careflow-backend:${{ github.sha }} $IMAGE_BACKEND
+          docker push $IMAGE_BACKEND
+
+          IMAGE_FRONTEND=${{ steps.ecr.outputs.registry }}/careflow-frontend:${{ github.sha }}
+          docker tag careflow-frontend:${{ github.sha }} $IMAGE_FRONTEND
+          docker push $IMAGE_FRONTEND
 
  
