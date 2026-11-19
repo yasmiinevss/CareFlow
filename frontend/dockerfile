@@ -1,0 +1,15 @@
+# Build frontend and call it "build" 
+FROM node:24-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci 
+COPY . .
+RUN npm run build
+
+# Serve frontend with nginx => in this step we go from zero to a production-ready image // We get the nginx image using 
+#the dist directory from the build stage
+FROM nginx:1-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+# with thhe COPY cmd the new configuration replace the default one in the nginx image
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80

@@ -26,8 +26,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-    ports:
-      - "3000:3000"
+    ports: !reset []  #Backend no more exposed to the outside world, only accessible through nginx
+    restart: unless-stopped
+
     depends_on:
       careflow-db:
         condition: service_healthy
@@ -37,5 +38,14 @@ services:
       timeout: 3s
       retries: 5
 
+  frontend:
+    build: ./frontend
+    ports: !override
+      - "80:80"               # Nginx will listen on port 80 and forward requests to the backend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+       
 volumes:
   pgdata:
