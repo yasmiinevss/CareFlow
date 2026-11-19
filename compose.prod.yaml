@@ -1,3 +1,14 @@
+services:
+  careflow-db:
+    ports: !reset []
+    restart: unless-stopped
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: eu-west-3
+        awslogs-group: /careflow
+        awslogs-stream: careflow-db
+
   backend:
     image: 236554611831.dkr.ecr.eu-west-3.amazonaws.com/careflow-backend:${IMAGE_TAG:?IMAGE_TAG is required}
     ports: !reset []
