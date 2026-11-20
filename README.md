@@ -1,189 +1,119 @@
 # CareFlow
 
-Appointment management API for a fictional medical practice, built as a portfolio project to practice full-stack development, containerization, CI/CD and cloud deployment.
+Full-stack appointment management application for a fictional medical practice, built end to end as a portfolio project: from design to automated deployment on AWS.
 
 > **Fictional data only.** CareFlow is a learning project, not a real medical application.
 
-## Project status
-
-🚧 **In progress**
-
-| Area | Status |
-|---|---|
-| REST API (Node.js / Express) | ✅ Done |
-| PostgreSQL database (schema, constraints, seed data) | ✅ Done |
-| Unit and integration tests | ✅ Done |
-| Backend Docker image | ✅ Done |
-| Docker Compose (backend + database) | 🔜 Next |
-| CI with GitHub Actions | 🔜 Planned |
-| Deployment on AWS (EC2, VPC, IAM, CloudWatch) | 🔜 Planned |
-| React frontend | 🔜 Planned |
-
 ## Features
 
-- List, view, create and update appointments
-- Cancel an appointment by changing its status (no deletion, history is kept)
+- List, create and cancel appointments from a React interface
+- Cancelling is a **status change, never a deletion**, to keep the history
 - Status lifecycle with enforced transitions: `scheduled` → `cancelled` / `completed` / `no_show`
-- Create and list patients
-- Input validation and a consistent JSON error format
-
-## Tech stack
-
-- **Backend:** Node.js 24, Express 5
-- **Database:** PostgreSQL 17
-- **Tests:** Node.js built-in test runner (`node:test`), `supertest`
-- **Containers:** Docker
-- **Planned:** Docker Compose, GitHub Actions, AWS, React
+- Attendance statistics per patient (`GET /api/patients/:id/stats`), developed with **TDD**
+- Input validation and a single JSON error format
 
 ## Architecture
 
-The backend follows a layered architecture. Each layer has a single responsibility:
-
 ```
-HTTP request
-   │
+Browser (React + TypeScript)
+   │  HTTP / JSON, relative /api/... URLs
    ▼
-routes/        maps each URL to a controller function
+Nginx ─────────── serves the built frontend, forwards /api to the backend (only exposed service)
    ▼
-controllers/   handles HTTP: reads the request, sends the response
+Backend (Node.js + Express), layered:
+   routes → controllers → validators → services → repositories
    ▼
-validators/    checks the shape of incoming data (types, lengths, allowed values)
-   ▼
-services/      applies business rules (patient must exist, status transitions)
-   ▼
-repositories/  runs SQL queries (parameterized only)
-   ▼
-PostgreSQL
+PostgreSQL (constraints, foreign keys, parameterized queries only)
 ```
 
-All errors go through a central error-handling middleware that returns a single JSON format:
+**Deployment:** Docker Compose on an AWS EC2 instance (Graviton, Paris region).
+A push on `main` runs a GitHub Actions pipeline:
 
-```json
-{ "error": { "code": "VALIDATION_ERROR", "message": "duration_minutes must be an integer between 15 and 30" } }
-```
+1. **test** – unit and integration tests against a temporary PostgreSQL
+2. **build** – builds the backend and frontend images (ARM), tags them with the commit SHA, pushes them to Amazon ECR
+3. **deploy** – sends a command through AWS Systems Manager; the instance pulls the new images and restarts the containers
 
-Unexpected errors are logged on the server and return a neutral `500` message, so internal details are never exposed.
+No AWS key is stored anywhere: GitHub authenticates with **OIDC**, and the instance uses an **IAM role**. No SSH port is open.
 
-## Getting started
+## Tech stack
 
-### Prerequisites
+| Area | Technologies |
+|---|---|
+| Frontend | React, TypeScript, Vite |
+| Backend | Node.js 24, Express 5 |
+| Database | PostgreSQL 17 |
+| Tests | `node:test`, `supertest` |
+| Containers | Docker, Docker Compose, Nginx |
+| CI/CD | GitHub Actions |
+| Cloud | AWS: EC2, ECR, IAM, Systems Manager, CloudWatch Logs |
 
-- Node.js 24
-- Docker
+## Run locally
 
-### 1. Start PostgreSQL
+**Prerequisites:** Docker, Node.js 24.
 
 ```bash
-docker run --name careflow-db \
-  -e POSTGRES_USER=careflow \
-  -e POSTGRES_PASSWORD=careflow_dev_password \
-  -e POSTGRES_DB=careflow \
-  -p 5432:5432 \
-  -v careflow-pgdata:/var/lib/postgresql/data \
-  -d postgres:17
+cp .env.example .env              # then set DB_PASSWORD
+docker compose up -d --build
 ```
 
-### 2. Configure the environment
+- Application: http://localhost
+- API health check: http://localhost/api/health
+
+### Frontend in development mode
 
 ```bash
+docker compose up -d careflow-db
+cd backend && npm install && npm run dev      # API on port 3000
+cd frontend && npm install && npm run dev     # http://localhost:5173 (Vite proxies /api to the backend)
+```
+
+## Run the tests
+
+```bash
+docker compose up -d careflow-db
 cd backend
-cp .env.example .env
-```
-
-Then edit `.env` and set `DB_PASSWORD` to the password used above.
-
-### 3. Create the tables and load the sample data
-
-```bash
-docker exec -i careflow-db psql -U careflow -d careflow < db/schema.sql
-docker exec -i careflow-db psql -U careflow -d careflow < db/seed.sql
-```
-
-### 4. Install and run
-
-```bash
-npm install
-npm run dev
-```
-
-The API is available at `http://localhost:3000/api`. Health check:
-
-```bash
-curl http://localhost:3000/api/health
-```
-
-### 5. Run the tests
-
-```bash
 npm test
 ```
 
-> The integration tests reset the database before each test.
+Integration tests reset the database before each test and run one file at a time, so they never interfere with each other.
 
 ## API overview
 
 | Method | URL | Description |
 |---|---|---|
 | GET | `/api/health` | Health check |
-| GET | `/api/appointments` | List all appointments |
+| GET | `/api/appointments` | List appointments |
 | GET | `/api/appointments/:id` | Get one appointment |
 | POST | `/api/appointments` | Create an appointment |
 | PATCH | `/api/appointments/:id` | Update an appointment (date, duration, status) |
-| GET | `/api/patients` | List all patients |
+| GET | `/api/patients` | List patients |
 | GET | `/api/patients/:id` | Get one patient |
 | POST | `/api/patients` | Create a patient |
+| GET | `/api/patients/:id/stats` | Appointment counters for a patient |
 
-Full reference: [`docs/api.md`](docs/api.md) · Data model: [`docs/data-model.md`](docs/data-model.md)
+Full contract: [`docs/api.md`](docs/api.md) · Data model: [`docs/data-model.md`](docs/data-model.md)
+
+## Deployment and rollback
+
+Deployment is automatic on every push to `main`. To roll back, redeploy a previous version from the server:
+
+```bash
+sudo IMAGE_TAG=<previous-commit-sha> ./scripts/deploy.sh
+```
+
+Image tags are immutable in ECR, so a tag always points to the exact image that was tested.
 
 ## Key design decisions
 
-- **Cancelling is a status change, not a deletion**, to keep a full history (e.g. tracking no-shows).
-- **Business rules are separated from data access**: status transition rules live in a pure function, unit-tested on every combination.
-- **Defense in depth**: data is validated in the backend *and* protected by database constraints (`CHECK`, `NOT NULL`, foreign keys).
-- **Parameterized SQL queries only**, to prevent SQL injection.
-- **No secrets in the code, the Git history or the Docker image**: configuration comes from environment variables.
-- **Docker image**: pinned Node version, production dependencies only, runs as a non-root user.
+- **Layered backend**: one responsibility per layer; only repositories contain SQL.
+- **Defense in depth**: validation in the backend *and* constraints in the database.
+- **Raw counters instead of a rate** for patient statistics: a percentage is misleading on few appointments.
+- **Counting done by PostgreSQL** (`COUNT … FILTER`): one row returned, whatever the volume.
+- **No secrets** in the code, the Git history or the Docker images.
 
-## Project structure
+## Known limitations and next steps
 
-```
-backend/
-├── db/              SQL scripts (schema, seed data)
-├── src/
-│   ├── config.js    configuration from environment variables
-│   ├── app.js       Express app (middlewares and routes)
-│   ├── server.js    starts the server after checking the database connection
-│   ├── db/          PostgreSQL connection pool
-│   ├── routes/
-│   ├── controllers/
-│   ├── validators/
-│   ├── services/
-│   ├── repositories/
-│   ├── middlewares/ 404 and error handling
-│   └── utils/       AppError class
-├── tests/           unit and integration tests
-└── Dockerfile
-docs/                API reference and data model
-```
-
-## Roadmap
-
-1. Docker Compose (backend + PostgreSQL, healthchecks)
-2. CI with GitHub Actions (tests against a temporary PostgreSQL, Docker build)
-3. AWS deployment: IAM, VPC, Security Groups, EC2, CloudWatch
-4. Minimal React frontend served by Nginx
-5. Continuous deployment
-
-### CI (2026-10-18)
-
-#### Done
-- `.github/workflows/ci.yaml`: `test` job (PostgreSQL 17 service container, npm ci, npm test)
-  then `build` job (docker build), only if tests pass (`needs: test`)
-- Verified: a deliberately broken rule makes the pipeline fail and skips the build
-
-#### Issues encountered
-- Push refused: Personal Access Token without `workflow` scope.
-  Replaced with a fine-grained token limited to this repository.
-
-#### Next session
-AWS foundations: IAM user with MFA, budget alert, VPC and Security Groups, costs.
+- HTTPS and a domain name
+- Database backups (`pg_dump` to S3, or Amazon RDS)
+- CloudWatch alarms (disk, memory)
+- Clean old images on the server after each deployment
