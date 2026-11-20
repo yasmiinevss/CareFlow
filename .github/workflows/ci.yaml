@@ -6,9 +6,11 @@ on:
   pull_request:
 
 jobs:
+# Run tests on the backend
   test:
     runs-on: ubuntu-latest
 
+    # Use a PostgreSQL service for the backend tests
     services:
       postgres:
         image: postgres:17
@@ -24,6 +26,7 @@ jobs:
           --health-timeout 3s
           --health-retries 10
 
+    # Set environment variables for the backend tests (Replace the .env file with actual values)
     env:
       DB_HOST: localhost
       DB_PORT: 5432
@@ -31,10 +34,12 @@ jobs:
       DB_PASSWORD: careflow_ci_password
       DB_NAME: careflow
 
+
     defaults:
       run:
         working-directory: backend
 
+    # Run the backend tests
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -46,32 +51,42 @@ jobs:
       - run: npm test
 
 
+  # Build and push Docker images to Amazon ECR
   build:
     needs: test
+    # Bc serveur EC2 is ARM-based, we need to build the Docker images for ARM architecture
     runs-on: ubuntu-24.04-arm
+    # Has the write permission for id-token to allow OIDC authentication and read permission for contents to allow reading the repository contents
     permissions:
       id-token: write
       contents: read
+    
+    
     steps:
       - uses: actions/checkout@v5
 
+      # Build Docker images for the backend and frontend
       - name: Build images
         run: |
          docker build -t careflow-backend:${{ github.sha }} ./backend
          docker build -t careflow-frontend:${{ github.sha }} ./frontend
       
+      # Exchange the GitHub OIDC token for AWS credentials and configure the AWS CLI to use those credentials
       - name: Configure AWS credentials (OIDC)
         if: github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          # Role created in AWS IAM with permissions to push Docker images to ECR and deploy to EC2 via Systems Manager
           role-to-assume: arn:aws:iam::236554611831:role/careflow-github-deploy
           aws-region: eu-west-3
 
+      # Log in to Amazon ECR 
       - name: Log in to Amazon ECR
         if: github.event_name == 'push'
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # Push the Docker images to Amazon ECR
       - name: Push image to ECR
         if: github.event_name == 'push'
         run: |
@@ -83,6 +98,7 @@ jobs:
           docker tag careflow-frontend:${{ github.sha }} $IMAGE_FRONTEND
           docker push $IMAGE_FRONTEND
 
+
   deploy:
     needs: build
     if: github.event_name == 'push'
@@ -91,16 +107,19 @@ jobs:
       id-token: write
       contents: read
     steps:
+
+      # Reuse the AWS credentials configured in the build job to deploy to EC2 via Systems Manager
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::236554611831:role/careflow-github-deploy
           aws-region: eu-west-3
 
+      
       - name: Deploy to EC2 via Systems Manager
         env:
-          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
-          IMAGE_TAG: ${{ github.sha }}
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }} # Find the EC2 instance ID in the GitHub repository settings under "Variables"
+          IMAGE_TAG: ${{ github.sha }} # Use the GitHub SHA (commit hash) as the image tag to deploy the specific version of the Docker images built in the previous step
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "$INSTANCE_ID" \

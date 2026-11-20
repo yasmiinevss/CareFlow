@@ -3,6 +3,7 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 import { notFound } from './middlewares/notFound.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import patientRoutes from './routes/patientRoutes.js';
+
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json());

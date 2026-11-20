@@ -2,6 +2,7 @@ import * as patientRepository from '../repositories/patientRepository.js';
 import {AppError} from '../utils/AppError.js';
 import {validatePatient} from '../validators/patientValidator.js';
 import { parseId } from '../validators/patientValidator.js';
+import * as patientService from '../services/patientService.js';
 
 export async function listPatients(req, res) {
   const patients = await patientRepository.findAll();
@@ -23,12 +24,9 @@ export async function createPatient(req, res) {
   res.status(201).json(newPatient);
 }
 
+
 export async function getPatientStats(req, res) {
   const id = parseId(req.params.id, 'Patient');
-  const patient = await patientRepository.findById(id);
-  if (!patient) {
-    throw new AppError(404, 'NOT_FOUND', `Patient with ID ${id} not found`);
-  }
-  const stats = await patientRepository.getStatsByPatientId(id);
+  const stats = await patientService.getPatientStats(id);
   res.json(stats);
 }

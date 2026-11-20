@@ -32,13 +32,6 @@ export async function createPatient(firstName, lastName) {
 }
 
 export async function getStatsByPatientId(patientId) {
-  const patient = await findById(patientId);
-  if(patient === undefined) {
-    throw new AppError(404, 'NOT_FOUND', `Patient ${patientId} not found`);
-  };
-  if (patientId <= 0 || !Number.isInteger(patientId)) {
-    throw new AppError(400, 'VALIDATION_ERROR', 'Patient id must be a positive integer');
-  };
   const result = await pool.query(
     `SELECT 
       COUNT(*) FILTER (WHERE status = 'completed')::int AS "completed",
